@@ -1,86 +1,116 @@
 ﻿using CGUtilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CGAlgorithms.Algorithms.ConvexHull
 {
     public class JarvisMarch : Algorithm
     {
-        public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
+        public override void Run(List<Point> inputPoints, List<Line> lines, List<Polygon> polygons, ref List<Point> convexHullPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
-            int n = points.Count;
+            // Get the number of input points
+            int numPoints = inputPoints.Count;
 
-            // There must be at least 3 points for convex hull
-            if (n < 3)
+            // Check if there are at least 3 points for a convex hull
+            if (numPoints < 3)
             {
-                outPoints = points;
+                // If not enough points, the input points are the convex hull
+                convexHullPoints = inputPoints;
                 return;
             }
 
-            // Initialize Result
-            List<Point> hull = new List<Point>();
+            // Initialize the result convex hull list
+            List<Point> convexHull = new List<Point>();
 
-            // Find the leftmost point
-            int l = 0;
-            for (int i = 1; i < n; i++)
-            {
-                if (points[i].X < points[l].X || (points[i].X == points[l].X && points[i].Y < points[l].Y))
-                    l = i;
-            }
+            // Find the leftmost point as the starting point for the convex hull
+            int leftmostIndex = FindLeftmostPointIndex(inputPoints);
 
-            // Start from the leftmost point, keep moving counterclockwise until reach the start point again
-            int p = l, q;
-            do
-            {
-                // Add the current point to the result
-                hull.Add(points[p]);
-
-                // Search for a point 'q' such that orientation(p, x, q) is counterclockwise for all points 'x'
-                q = (p + 1) % n;
-                for (int i = 0; i < n; i++)
-                {
-                    // If i is more counterclockwise than current q, then update q
-                    int turn = TurnOrientation(points[p], points[i], points[q]);
-                    if (turn == -1 || (turn == 0 && Distance(points[p], points[i]) > Distance(points[p], points[q])))
-                        q = i;
-                }
-
-                // Now q is the most counterclockwise with respect to p
-                // Set p as q for the next iteration, so that q is added to the result 'hull'
-                p = q;
-
-            } while (p != l);  // While we don't come to the first point
+            // Build the convex hull starting from the leftmost point
+            BuildConvexHull(inputPoints, numPoints, leftmostIndex, ref convexHull);
 
             // Set the output convex hull points
-            outPoints = hull;
-
-            // Optionally, you can create lines or polygons based on the convex hull points
-            // For simplicity, the lines and polygons lists are not used in this example.
+            convexHullPoints = convexHull;
         }
 
         public override string ToString()
         {
             return "Convex Hull - Jarvis March";
         }
-
-        // Function to determine the orientation of three points
-        // Returns -1 for counterclockwise, 0 for colinear, and 1 for clockwise
-        private int TurnOrientation(Point p, Point q, Point r)
+        // Determines the orientation of three points.
+        // Returns -1 for counterclockwise, 0 for colinear, and 1 for clockwise.
+        private int DetermineOrientation(Point p, Point q, Point r)
         {
-            double val = (q.Y - p.Y) * (r.X - q.X) - (q.X - p.X) * (r.Y - q.Y);
-            if (Math.Abs(val) < double.Epsilon) return 0;     // colinear
-            return (val > 0) ? -1 : 1;   // counterclockwise or clockwise
+            double crossProduct = (q.Y - p.Y) * (r.X - q.X) - (q.X - p.X) * (r.Y - q.Y);
+
+            // Check for colinearity
+            if (Math.Abs(crossProduct) < double.Epsilon)
+                return 0; // Colinear
+
+            return (crossProduct > 0) ? -1 : 1; // Counterclockwise or clockwise
         }
 
-        // Function to calculate the squared Euclidean distance between two points
-        private double Distance(Point a, Point b)
+        // Calculates the squared Euclidean distance between two points.
+        private double CalculateSquaredDistance(Point a, Point b)
         {
             double dx = a.X - b.X;
             double dy = a.Y - b.Y;
+
             return dx * dx + dy * dy;
         }
+
+        // Helper method to find the index of the leftmost point.
+        private int FindLeftmostPointIndex(List<Point> points)
+        {
+            int leftmostIndex = 0;
+
+            for (int i = 1; i < points.Count; i++)
+            {
+                // Compare X coordinates; if equal, compare Y coordinates
+                if (points[i].X < points[leftmostIndex].X ||
+                   (points[i].X == points[leftmostIndex].X && points[i].Y < points[leftmostIndex].Y))
+                {
+                    leftmostIndex = i;
+                }
+            }
+
+            return leftmostIndex;
+        }
+
+        // Helper method to build the convex hull starting from a given point
+        private void BuildConvexHull(List<Point> points, int totalPoints, int startingPointIndex, ref List<Point> convexHull)
+        {
+            int currentPointIndex = startingPointIndex;
+            int nextPointIndex;
+
+            do
+            {
+                // Add the current point to the convex hull
+                convexHull.Add(points[currentPointIndex]);
+
+                // Find the next point in the convex hull
+                nextPointIndex = FindNextHullPoint(points, totalPoints, currentPointIndex);
+
+                // Update the current point for the next iteration
+                currentPointIndex = nextPointIndex;
+
+            } while (currentPointIndex != startingPointIndex);  // Continue until reaching the starting point again
+        }
+
+        // Helper method to find the next point in the convex hull
+        private int FindNextHullPoint(List<Point> points, int totalPoints, int currentPointIndex)
+        {
+            int nextPointIndex = (currentPointIndex + 1) % totalPoints;
+
+            for (int i = 0; i < totalPoints; i++)
+            {
+                int turn = DetermineOrientation(points[currentPointIndex], points[i], points[nextPointIndex]);
+
+                if (turn == -1 || (turn == 0 && CalculateSquaredDistance(points[currentPointIndex], points[i]) > CalculateSquaredDistance(points[currentPointIndex], points[nextPointIndex])))
+                    nextPointIndex = i;
+            }
+
+            return nextPointIndex;
+        }
+
     }
 }
