@@ -16,108 +16,229 @@ namespace CGAlgorithms.Algorithms.ConvexHull
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
 
-            points.Sort(compareXY);
-            List<Point> uniqPoints = new List<Point>();
-            uniqPoints.Add(points[0]);
-            for (int i = 1; i < points.Count; i++)
-            {
-                if (points[i].Equals(points[i - 1]))
-                {
-                    continue;
-                }
-                uniqPoints.Add(points[i]);
-            }
-            points = uniqPoints;
+            points.Sort(CompareXY);
+            points = RemoveDuplicates(points);
 
+            FindLowestYPointIndex(points, out double MinimY, out double x, out int ind);
 
-            double MinimY = double.MaxValue;
-            double x = 0;
-            bool[] vis = new bool[points.Count];
-            for (int i = 0; i < points.Count; i++)
-                vis[i] = false;
-            int ind = 0;
-            for (int i = 0; i < points.Count; i++)
-            {
-                if (MinimY > points[i].Y)
-                {
-                    MinimY = points[i].Y;
-                    x = points[i].X;
-                    ind = i;
-                }
-            }
             Line MakeLIne = new Line(new Point(x, MinimY), new Point(x + 1000.0, MinimY));
 
-            List<KeyValuePair<double, int>> list = new List<KeyValuePair<double, int>>();
-            for (int i = 0; i < points.Count; i++)
-            {
-                if (i == ind) continue;
-                Point v1 = PointTOVector(MakeLIne.Start, MakeLIne.End);
-                Point v2 = PointTOVector(MakeLIne.Start, points[i]);
-                double cros = HelperMethods.CrossProduct(v1, v2);
-                double dot = Dot(v1, v2);
+            List<KeyValuePair<double, int>> list = CalculateAngles(points, ind, MakeLIne);
 
-                double angle = Math.Atan2(cros, dot) * (180.00 / Math.PI); ;
-                if (angle < 0)
-                    angle += 360;
 
-                list.Add(new KeyValuePair<double, int>(angle, i));
-            }
-            list.Sort(Compare1);
+            list.Sort(CompareAngles);
 
             Stack<int> st = new Stack<int>();
             st.Push(ind);
             if (list.Count > 0)
                 st.Push(list[0].Value);
-            for (int i = 1; i < points.Count - 1 && st.Count >= 2; i++)
+            MakeLIne = BuildConvexHull(points, MakeLIne, list, st);
+
+            PopulateConvexHullPoints(points, outPoints, st);
+        }
+
+        /// <summary>
+        /// Populates the convex hull points from the stack to the output list.
+        /// </summary>
+        private static void PopulateConvexHullPoints(List<Point> inputPoints, List<Point> convexHullPoints, Stack<int> convexHullStack)
+        {
+            // Pop elements from the stack and add corresponding points to the convex hull list
+            while (convexHullStack.Count > 0)
             {
-                int pp1 = st.Peek();
-                Point p1 = points[pp1];
-                st.Pop();
-                int pp2 = st.Peek();
-                Point p2 = points[pp2];
+                convexHullPoints.Add(inputPoints[convexHullStack.Peek()]);
+                convexHullStack.Pop();
+            }
+        }
 
-                st.Push(pp1);
 
-                MakeLIne = new Line(p2, p1);
-                if (HelperMethods.CheckTurn(MakeLIne, points[list[i].Value]) == Enums.TurnType.Left)
+        /// <summary>
+        /// Builds the convex hull using the Graham Scan algorithm.
+        /// </summary>
+        /// <param name="points">The list of input points.</param>
+        /// <param name="currentLine">The current line used in the algorithm.</param>
+        /// <param name="sortedAngles">The list of angles and corresponding indices sorted in ascending order.</param>
+        /// <param name="convexHullStack">The stack containing the indices of convex hull points.</param>
+        /// <returns>The final line used in the convex hull.</returns>
+        private static Line BuildConvexHull(List<Point> points, Line currentLine, List<KeyValuePair<double, int>> sortedAngles, Stack<int> convexHullStack)
+        {
+            // Iterate through the sorted angles and update the convex hull stack
+            for (int i = 1; i < points.Count - 1 && convexHullStack.Count >= 2; i++)
+            {
+                int previousIndex1 = convexHullStack.Peek();
+                Point previousPoint1 = points[previousIndex1];
+                convexHullStack.Pop();
+
+                int previousIndex2 = convexHullStack.Peek();
+                Point previousPoint2 = points[previousIndex2];
+
+                convexHullStack.Push(previousIndex1);
+
+                currentLine = new Line(previousPoint2, previousPoint1);
+
+                // Check the turn type and update the stack accordingly
+                if (HelperMethods.CheckTurn(currentLine, points[sortedAngles[i].Value]) == Enums.TurnType.Left)
                 {
-                    st.Push(list[i].Value);
+                    convexHullStack.Push(sortedAngles[i].Value);
                 }
-                else if (HelperMethods.CheckTurn(MakeLIne, points[list[i].Value]) == Enums.TurnType.Colinear)
+                else if (HelperMethods.CheckTurn(currentLine, points[sortedAngles[i].Value]) == Enums.TurnType.Colinear)
                 {
-                    st.Pop();
-                    st.Push(list[i].Value);
+                    convexHullStack.Pop();
+                    convexHullStack.Push(sortedAngles[i].Value);
                 }
                 else
                 {
-                    st.Pop();
+                    convexHullStack.Pop();
                     i--;
                 }
             }
-            while (st.Count > 0)
+
+            return currentLine;
+        }
+
+
+        /// <summary>
+        /// Calculates the angles between the reference line and other points.
+        /// </summary>
+        /// <param name="points">The list of input points.</param>
+        /// <param name="referenceIndex">The index of the reference point.</param>
+        /// <param name="referenceLine">The reference line.</param>
+        /// <returns>A list of angles and corresponding indices, sorted in ascending order.</returns>
+        private List<KeyValuePair<double, int>> CalculateAngles(List<Point> points, int referenceIndex, Line referenceLine)
+        {
+            List<KeyValuePair<double, int>> angleList = new List<KeyValuePair<double, int>>();
+
+            // Calculate angles for each point and add them to the list
+            for (int i = 0; i < points.Count; i++)
             {
-                outPoints.Add(points[st.Peek()]);
-                st.Pop();
+                if (i == referenceIndex)
+                    continue;
+
+                Point vector1 = PointToVector(referenceLine.Start, referenceLine.End);
+                Point vector2 = PointToVector(referenceLine.Start, points[i]);
+
+                double crossProduct = HelperMethods.CrossProduct(vector1, vector2);
+                double dotProduct = Dot(vector1, vector2);
+
+                double angle = Math.Atan2(crossProduct, dotProduct) * (180.00 / Math.PI);
+                if (angle < 0)
+                    angle += 360;
+
+                angleList.Add(new KeyValuePair<double, int>(angle, i));
+            }
+
+            // Sort the list by angles in ascending order
+            angleList.Sort((a, b) => a.Key.CompareTo(b.Key));
+
+            return angleList;
+        }
+
+        /// <summary>
+        /// Finds the index of the point with the lowest Y coordinate.
+        /// </summary>
+        /// <param name="points">The list of input points.</param>
+        /// <param name="lowestY">Output parameter for the minimum Y coordinate.</param>
+        /// <param name="xCoordinate">Output parameter for the corresponding X coordinate.</param>
+        /// <param name="lowestYIndex">Output parameter for the index of the point with the lowest Y coordinate.</param>
+        private static void FindLowestYPointIndex(List<Point> points, out double lowestY, out double xCoordinate, out int lowestYIndex)
+        {
+            lowestY = double.MaxValue;
+            xCoordinate = 0;
+            bool[] visited = new bool[points.Count];
+
+            // Initialize the visited array
+            for (int i = 0; i < points.Count; i++)
+                visited[i] = false;
+
+            lowestYIndex = 0;
+
+            // Find the point with the lowest Y coordinate
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (lowestY > points[i].Y)
+                {
+                    lowestY = points[i].Y;
+                    xCoordinate = points[i].X;
+                    lowestYIndex = i;
+                }
             }
         }
 
-        Point PointTOVector(Point a, Point b)
+
+        /// <summary>
+        /// Removes duplicate points from the input list.
+        /// </summary>
+        /// <param name="points">The list of input points.</param>
+        /// <returns>A list of unique points without duplicates.</returns>
+        private static List<Point> RemoveDuplicates(List<Point> points)
+        {
+            List<Point> uniquePoints = new List<Point> { points[0] };
+
+            // Iterate through the points to find and add unique points
+            for (int i = 1; i < points.Count; i++)
+            {
+                // Check if the current point is the same as the previous one
+                if (points[i].Equals(points[i - 1]))
+                {
+                    continue;
+                }
+
+                // Add the unique point to the list
+                uniquePoints.Add(points[i]);
+            }
+
+            // Update the input list with the unique points
+            points = uniquePoints;
+
+            return points;
+        }
+
+        /// <summary>
+        /// Custom comparison method for sorting a list of key-value pairs based on their keys.
+        /// </summary>
+        /// <param name="a">The first key-value pair.</param>
+        /// <param name="b">The second key-value pair.</param>
+        /// <returns>An integer indicating the relative order of the key-value pairs.</returns>
+        static int CompareAngles(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
+        {
+            if (a.Key == b.Key)
+            {
+                return a.Value.CompareTo(b.Value);
+            }
+
+            return a.Key.CompareTo(b.Key);
+        }
+
+        /// <summary>
+        /// Converts two points into a vector.
+        /// </summary>
+        /// <param name="a">The starting point of the vector.</param>
+        /// <param name="b">The ending point of the vector.</param>
+        /// <returns>A vector representing the difference between the two points.</returns>
+        Point PointToVector(Point a, Point b)
         {
             return new Point(b.X - a.X, b.Y - a.Y);
         }
-        static int compareXY(Point a, Point b)
+
+        /// <summary>
+        /// Custom comparison method for sorting points based on their X and Y coordinates.
+        /// </summary>
+        /// <param name="a">The first point.</param>
+        /// <param name="b">The second point.</param>
+        /// <returns>An integer indicating the relative order of the points.</returns>
+        static int CompareXY(Point a, Point b)
         {
-            if (a.X == b.X) return a.Y.CompareTo(b.Y);
+            if (a.X == b.X)
+            {
+                return a.Y.CompareTo(b.Y);
+            }
+
             return a.X.CompareTo(b.X);
         }
+
         public override string ToString()
         {
             return "Convex Hull - Graham Scan";
         }
-        static int Compare1(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
-        {
-            if (a.Key == b.Key) return a.Value.CompareTo(b.Value);
-            return a.Key.CompareTo(b.Key);
-        }
+        
     }
 }
