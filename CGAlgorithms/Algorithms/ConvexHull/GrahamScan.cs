@@ -9,10 +9,17 @@ namespace CGAlgorithms.Algorithms.ConvexHull
 {
     public class GrahamScan : Algorithm
     {
-        public static double Dot(Point v1, Point v2)
+        /// <summary>
+        /// Calculates the dot product of two 2D vectors represented by points.
+        /// </summary>
+        /// <param name="v1">The first vector.</param>
+        /// <param name="v2">The second vector.</param>
+        /// <returns>The dot product of the two vectors.</returns>
+        public static double DotProduct(Point v1, Point v2)
         {
             return v1.X * v2.X + v1.Y * v2.Y;
         }
+
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
 
@@ -117,7 +124,7 @@ namespace CGAlgorithms.Algorithms.ConvexHull
                 Point vector2 = PointToVector(referenceLine.Start, points[i]);
 
                 double crossProduct = HelperMethods.CrossProduct(vector1, vector2);
-                double dotProduct = Dot(vector1, vector2);
+                double dotProduct = DotProduct(vector1, vector2);
 
                 double angle = Math.Atan2(crossProduct, dotProduct) * (180.00 / Math.PI);
                 if (angle < 0)
