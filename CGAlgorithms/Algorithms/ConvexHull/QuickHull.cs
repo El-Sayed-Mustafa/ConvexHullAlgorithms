@@ -2,44 +2,50 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CGAlgorithms.Algorithms.ConvexHull
 {
     public class QuickHull : Algorithm
     {
-        public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
+        public override void Run(List<Point> inputPoints, List<Line> lines, List<Polygon> polygons, ref List<Point> convexHullPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
-            int n = points.Count;
+            int pointCount = inputPoints.Count;
 
             // If there are fewer than 3 points, the convex hull is not defined
-            if (n < 3)
+            if (pointCount < 3)
             {
-                outPoints = points;
+                convexHullPoints = inputPoints;
                 return;
             }
 
             HashSet<Point> hull = new HashSet<Point>();
 
-            // Finding the point with minimum and maximum x-coordinate
-            int minXIndex = 0, maxXIndex = 0;
-            for (int i = 1; i < n; i++)
-            {
-                if (points[i].X < points[minXIndex].X)
-                    minXIndex = i;
-                if (points[i].X > points[maxXIndex].X)
-                    maxXIndex = i;
-            }
-
-            // Recursively find convex hull points on one side of the line joining points[minXIndex] and points[maxXIndex]
-            QuickHullRecursive(points, n, points[minXIndex], points[maxXIndex], 1, ref hull);
+            // Find the points with minimum and maximum x-coordinates
+            getBottomMostPoint(inputPoints, pointCount, out int minXIndex, out int maxXIndex);
 
             // Recursively find convex hull points on the other side of the line
-            QuickHullRecursive(points, n, points[minXIndex], points[maxXIndex], -1, ref hull);
+            Recurion(inputPoints, pointCount, inputPoints[minXIndex], inputPoints[maxXIndex], -1, ref hull);
+
+
+            // Recursively find convex hull points on one side of the line joining inputPoints[minXIndex] and inputPoints[maxXIndex]
+            Recurion(inputPoints, pointCount, inputPoints[minXIndex], inputPoints[maxXIndex], 1, ref hull);
+
 
             // Set the output convex hull points
-            outPoints = hull.ToList();
+            convexHullPoints = hull.ToList();
+        }
+
+        private static void getBottomMostPoint(List<Point> inputPoints, int pointCount, out int minXIndex, out int maxXIndex)
+        {
+            minXIndex = 0;
+            maxXIndex = 0;
+            for (int i = 1; i < pointCount; i++)
+            {
+                if (inputPoints[i].X < inputPoints[minXIndex].X)
+                    minXIndex = i;
+                if (inputPoints[i].X > inputPoints[maxXIndex].X)
+                    maxXIndex = i;
+            }
         }
 
         public override string ToString()
@@ -47,51 +53,56 @@ namespace CGAlgorithms.Algorithms.ConvexHull
             return "Convex Hull - Quick Hull";
         }
 
-        // Helper method for QuickHull algorithm
-        private void QuickHullRecursive(List<Point> a, int n, Point p1, Point p2, int side, ref HashSet<Point> hull)
+        // Helper method for the QuickHull algorithm
+        private void Recurion(List<Point> points, int pointCount, Point startPoint, Point endPoint, int side, ref HashSet<Point> hull)
         {
-            int ind = -1;
-            int maxDist = 0;
+            int farthestPointIndex = -1;
+            int maxDistance = 0;
 
-            // Finding the point with maximum distance from the line
-            for (int i = 0; i < n; i++)
-            {
-                int temp = LineDist(p1, p2, a[i]);
-                if (FindSide(p1, p2, a[i]) == side && temp > maxDist)
-                {
-                    ind = i;
-                    maxDist = temp;
-                }
-            }
+            // Finding the point with the maximum distance from the line
+            GetMaxPoint(points, pointCount, startPoint, endPoint, side, ref farthestPointIndex, ref maxDistance);
 
             // If no point is found, add the end points of the line to the convex hull
-            if (ind == -1)
+            if (farthestPointIndex == -1)
             {
-                hull.Add(p1);
-                hull.Add(p2);
+                hull.Add(startPoint);
+                hull.Add(endPoint);
                 return;
             }
 
-            // Recur for the two parts divided by a[ind]
-            QuickHullRecursive(a, n, a[ind], p1, -FindSide(a[ind], p1, p2), ref hull);
-            QuickHullRecursive(a, n, a[ind], p2, -FindSide(a[ind], p2, p1), ref hull);
+            // Recur for the two parts divided by points[farthestPointIndex]
+            Recurion(points, pointCount, points[farthestPointIndex], startPoint, -GetSide(points[farthestPointIndex], startPoint, endPoint), ref hull);
+            Recurion(points, pointCount, points[farthestPointIndex], endPoint, -GetSide(points[farthestPointIndex], endPoint, startPoint), ref hull);
+        }
+
+        private void GetMaxPoint(List<Point> points, int pointCount, Point startPoint, Point endPoint, int side, ref int farthestPointIndex, ref int maxDistance)
+        {
+            for (int i = pointCount - 1; i >= 0; i--)
+            {
+                int distance = DisBetweenPointAndLine(startPoint, endPoint, points[i]);
+                if (GetSide(startPoint, endPoint, points[i]) == side && distance > maxDistance)
+                {
+                    farthestPointIndex = i;
+                    maxDistance = distance;
+                }
+            }
         }
 
         // Helper method to find the side of a point with respect to a line
-        private int FindSide(Point p1, Point p2, Point p)
+        private int GetSide(Point startPoint, Point endPoint, Point point)
         {
-            int val = (int)((p.Y - p1.Y) * (p2.X - p1.X) - (p2.Y - p1.Y) * (p.X - p1.X));
-            if (val > 0)
+            int value = (int)((point.Y - startPoint.Y) * (endPoint.X - startPoint.X) - (endPoint.Y - startPoint.Y) * (point.X - startPoint.X));
+            if (value > 0)
                 return 1;
-            if (val < 0)
+            if (value < 0)
                 return -1;
             return 0;
         }
 
         // Helper method to find a value proportional to the distance between a point and a line
-        private int LineDist(Point p1, Point p2, Point p)
+        private int DisBetweenPointAndLine(Point startPoint, Point endPoint, Point point)
         {
-            return (int)Math.Abs((p.Y - p1.Y) * (p2.X - p1.X) - (p2.Y - p1.Y) * (p.X - p1.X));
+            return (int)Math.Abs((point.Y - startPoint.Y) * (endPoint.X - startPoint.X) - (endPoint.Y - startPoint.Y) * (point.X - startPoint.X));
         }
     }
 }
