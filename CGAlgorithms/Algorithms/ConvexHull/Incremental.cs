@@ -290,7 +290,7 @@ namespace CGAlgorithms.Algorithms.ConvexHull
         {
             // Initialize the current index to the starting index
             int currentIndex = 0;
-
+                
             // Traverse the hull edges and add points to the result list
             while (true)
             {

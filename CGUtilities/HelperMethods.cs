@@ -37,6 +37,14 @@ namespace CGUtilities
                 return Enums.PointInPolygon.Inside;
             return Enums.PointInPolygon.Outside;
         }
+        public static double LinePointDistance(Line line, Point point)
+        {
+            Point vector1 = line.Start.Vector(line.End);
+            Point vector2 = line.End.Vector(point);
+            double projDistance = Math.Abs(CrossProduct(vector2, vector1) / vector1.Magnitude());
+            double diagonal = line.End.Vector(point).Magnitude();
+            return Math.Sqrt(diagonal * diagonal - projDistance * projDistance);
+        }
         public static Enums.TurnType CheckTurn(Point vector1, Point vector2)
         {
             double result = CrossProduct(vector1, vector2);
@@ -85,6 +93,29 @@ namespace CGUtilities
         public static Point GetVector(Line l)
         {
             return l.Start.Vector(l.End);
+        }
+        public static int orientation(Point p1, Point p2, Point p3)
+        {
+
+            double exp = (p2.Y - p1.Y) * (p3.X - p2.X) - (p2.X - p1.X) * (p3.Y - p2.Y);
+
+            if (exp == 0) return 0;  // collinear
+
+            return (exp > 0) ? 1 : 2; // clock or counterclock wise
+        }
+
+        public static Boolean CheckIntersection(Point a1, Point a2, Point b1, Point b2)
+        {
+            int o1 = orientation(a1, a2, b1);
+            int o2 = orientation(a1, a2, b2);
+            int o3 = orientation(b1, b2, a1);
+            int o4 = orientation(b1, b2, a2);
+
+            // general case
+            if (o1 != o2 && o3 != o4)
+                return true;
+            else
+                return false;
         }
     }
 }
