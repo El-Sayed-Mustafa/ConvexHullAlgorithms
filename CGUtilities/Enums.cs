@@ -27,5 +27,12 @@ namespace CGUtilities
             Lines,
             Polygons
         }
+
+        public enum PointType
+        {
+            Start,
+            Intersection,
+            End
+        }
     }
 }

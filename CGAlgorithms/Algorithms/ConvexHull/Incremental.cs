@@ -1,313 +1,168 @@
 ﻿using CGUtilities;
 using System;
 using System.Collections.Generic;
-using static System.Net.Mime.MediaTypeNames;
+using System.Linq;
 
 namespace CGAlgorithms.Algorithms.ConvexHull
 {
- 
     public class Incremental : Algorithm
     {
-        int[] next;  // Declare next at class level
-        int[] prev;  // Declare prev at class level
-
-        /// <summary>
-        /// Compares two points for sorting purposes.
-        /// </summary>
-
-        /// <returns>
-        ///     0 if the points are considered equal within a small epsilon value,
-        ///    -1 if the first point is less than the second, and
-        ///     1 if the first point is greater than the second.
-        /// </returns>
-        public int ComparePoints(Point a, Point b)
-        {
-            // Check if the points are almost equal within a small epsilon value
-            if (Math.Abs(a.X - b.X) <= Constants.Epsilon && Math.Abs(a.Y - b.Y) <= Constants.Epsilon)
-                return 0;
-
-            // Compare points based on their X coordinates
-            if (a.X == b.X)
-            {
-                // If X coordinates are equal, compare based on Y coordinates
-                if (a.Y < b.Y)
-                    return -1;
-                return 1;
-            }
-            else if (a.X < b.X)
-            {
-                // If the X coordinate of the first point is less than the second, return -1
-                return -1;
-            }
-
-            // If the X coordinate of the first point is greater than the second, return 1
-            return 1;
-        }
-
-        /// <summary>
-        /// Runs the Incremental Convex Hull algorithm on the provided set of points.
-        /// </summary>
-
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
-            // Handle special cases 
-            if (points.Count == 0)
+            if (points.Count < 4)
             {
-                // No points to process
-                return;
-            }
-
-            if (points.Count == 1)
-            {
-                // Only one point, it is the convex hull
-                outPoints.Add(points[0]);
-                return;
-            }
-
-            // Sort the points lexicographically for the convex hull algorithm
-            points.Sort(ComparePoints);
-
-            // Representation of the convex hull 
-            InitializeHullRepresentation(points);
-
-            // Find the index of the first non-collinear point
-            int index = FindFirstNonCollinearPoint(points);
-
-            if (index != points.Count)
-            {
-                // Initialize the convex hull with the first non-collinear point
-                InitializeFirstHullPoints(index);
+                outPoints = points;
             }
             else
             {
-                // All points are collinear, the convex hull is a single point
-                outPoints.Add(points[0]);
-                return;
-            }
+                List<Point> polygon = BuildInitialPolygon(points);
+                List<Line> polyLines = BuildInitialPolygonLines(polygon);
 
-            // Build the rest of the convex hull incrementally 
-            index = IncrementalHull(points, index);
-
-            // Build the result convex hull
-            BuildResultHull(points, outPoints, index);
-        }
-
-        /// <summary>
-        /// Initializes the data structures representing the convex hull.
-        /// </summary>
-        private void InitializeHullRepresentation(List<Point> points)
-        {
-            // Create arrays to represent the next and previous points in the convex hull
-            next = new int[points.Count];
-            prev = new int[points.Count];
-        }
-
-        /// <summary>
-        /// Finds the index of the first point that is not collinear with the first point.
-        /// </summary>
-        private int FindFirstNonCollinearPoint(List<Point> points)
-        {
-            int index = 1;
-
-            // Increment the index until a non-collinear point is found or the end of the list is reached
-            while (index < points.Count && ComparePoints(points[0], points[index]) == 0)
-            {
-                index += 1;
-            }
-
-            return index;
-        }
-
-        /// <summary>
-        /// Initializes the convex hull with the first non-collinear point.
-        /// </summary>
-        private void InitializeFirstHullPoints(int index)
-        {
-            // Connect the first non-collinear point with the initial point to form the initial convex hull edge
-            next[0] = index;
-            prev[0] = index;
-            next[index] = 0;
-            prev[index] = 0;
-        }
-
-        /// <summary>
-        /// Builds the convex hull incrementally by adding points to the existing hull.
-        /// </summary>
-        private int IncrementalHull(List<Point> points, int index)
-        {
-            // Initialize the index of the most right point in the hull
-            int mostRightPointIndex = index;
-
-            // Iterate through the remaining points to add them to the hull
-            for (index = index + 1; index < points.Count; index++)
-            {
-                Point newPoint = points[index];
-
-                // Ignore points that are equal to the most right point in the hull
-                if (ComparePoints(newPoint, points[mostRightPointIndex]) == 0)
+                for (int j = 0; j < polyLines.Count; j++)
                 {
-                    continue;
+                    Line selectedLine = polyLines[j];
+                    List<Point> possiblePoints = GetPossiblePoints(points, selectedLine);
+
+                    if (possiblePoints.Count == 0)
+                        continue;
+
+                    int maxElement = FindMaxDistanceElement(selectedLine, possiblePoints);
+                    List<Point> allTangents = Tangent(polygon, possiblePoints[maxElement]);
+
+                    UpdatePolygonAndLines(ref polygon, ref polyLines, allTangents, possiblePoints[maxElement]);
                 }
 
-                // Update the convex hull edges with the new point
-                UpdateHullEdges(points, index, mostRightPointIndex);
-
-                // Update the most right point index
-                mostRightPointIndex = index;
+                RemoveDuplicateLastPoint(ref polygon);
+                outPoints = polygon;
             }
-
-            // Return the final index processed during incremental hull construction
-            return index;
         }
 
-        /// <summary>
-        /// Updates the convex hull edges with the new point during incremental hull construction.
-        /// </summary>
-        /// <param name="points">The list of points.</param>
-        /// <param name="index">The index of the new point.</param>
-        /// <param name="mostRightPointIndex">The index of the most right point in the current convex hull.</param>
-        private void UpdateHullEdges(List<Point> points, int index, int mostRightPointIndex)
+        private List<Point> BuildInitialPolygon(List<Point> points)
         {
-            Point newPoint = points[index];
+            int upper = 0, left = 0, right = 0;
 
-            // Determine whether the new point is above or below the most right point in the hull
-            if (newPoint.Y >= points[mostRightPointIndex].Y)
+            for (int i = 0; i < points.Count; i++)
             {
-                // The new point is above or at the same height as the most right point
-                next[index] = next[mostRightPointIndex];
-                prev[index] = mostRightPointIndex;
+                if (points[i].X < points[left].X)
+                    left = i;
+                if (points[i].X > points[right].X)
+                    right = i;
+                if (points[i].Y > points[upper].Y)
+                    upper = i;
+            }
+
+            return new List<Point>
+            {
+                points[upper],
+                points[left],
+                points[right]
+            };
+        }
+
+        private List<Line> BuildInitialPolygonLines(List<Point> polygon)
+        {
+            return new List<Line>
+            {
+                new Line(polygon[0], polygon[1]),
+                new Line(polygon[1], polygon[2]),
+                new Line(polygon[2], polygon[0])
+            };
+        }
+
+        private List<Point> GetPossiblePoints(List<Point> points, Line selectedLine)
+        {
+            return points.Where(p => HelperMethods.CheckTurn(selectedLine, p) == Enums.TurnType.Right).ToList();
+        }
+
+        private int FindMaxDistanceElement(Line selectedLine, List<Point> possiblePoints)
+        {
+            double maxDistance = 0;
+            int maxElement = 0;
+
+            for (int i = 0; i < possiblePoints.Count; i++)
+            {
+                double distance = DistanacePointLine(possiblePoints[i], selectedLine);
+                if (distance > maxDistance)
+                {
+                    maxDistance = distance;
+                    maxElement = i;
+                }
+            }
+
+            return maxElement;
+        }
+
+        public static List<Point> Tangent(List<Point> Polygon, Point SelectedPoint)
+        {
+            List<Point> twoTangents = new List<Point>();
+
+            for (int i = 0; i < Polygon.Count; i++)
+            {
+                Point X = Polygon[i];
+                Point PreX = Polygon[(i == 0) ? Polygon.Count - 1 : i - 1];
+                Point NextX = Polygon[(i == Polygon.Count - 1) ? 0 : i + 1];
+
+                if (orientation(PreX, X, SelectedPoint) != orientation(X, NextX, SelectedPoint))
+                {
+                    twoTangents.Add(X);
+                }
+
+                if (twoTangents.Count == 2)
+                    break;
+            }
+
+            return twoTangents;
+        }
+
+        private void UpdatePolygonAndLines(ref List<Point> polygon, ref List<Line> polyLines, List<Point> allTangents, Point maxElementPoint)
+        {
+            if (orientation(allTangents[0], maxElementPoint, allTangents[1]) == 2)
+            {
+                UpdatePolygonAndLinesHelper(ref polygon, ref polyLines, allTangents[0], allTangents[1], maxElementPoint);
             }
             else
             {
-                // The new point is below the most right point
-                next[index] = mostRightPointIndex;
-                prev[index] = prev[mostRightPointIndex];
+                UpdatePolygonAndLinesHelper(ref polygon, ref polyLines, allTangents[1], allTangents[0], maxElementPoint);
             }
-
-            // Update the next and previous pointers of adjacent points in the hull
-            next[prev[index]] = index;
-            prev[next[index]] = index;
-
-            // Update the upper and lower hull edges based on the new point
-            UpdateUpperLine(points, index);
-            UpdateLowerLine(points, index);
         }
 
-
-        /// <summary>
-        /// Updates the upper hull line during incremental hull construction based on the new point.
-        /// </summary>
-        /// <param name="points">The list of points.</param>
-        /// <param name="index">The index of the new point.</param>
-        private void UpdateUpperLine(List<Point> points, int index)
+        private void UpdatePolygonAndLinesHelper(ref List<Point> polygon, ref List<Line> polyLines, Point tangent1, Point tangent2, Point maxElementPoint)
         {
-            // Continue updating the upper hull line until a left turn is encountered
-            while (true)
+            int index1 = polygon.IndexOf(tangent1) + 1;
+            polygon.Insert(index1, maxElementPoint);
+
+            Line line1 = new Line(tangent1, maxElementPoint);
+            Line line2 = new Line(maxElementPoint, tangent2);
+
+            polyLines.Add(line1);
+            polyLines.Add(line2);
+        }
+
+        private void RemoveDuplicateLastPoint(ref List<Point> polygon)
+        {
+            for (int i = 0; i < polygon.Count - 2; i++)
             {
-                // Create a line segment using the current point and the next point in the hull
-                Line segment = new Line(points[index], points[next[index]]);
-
-                // Get the next point after the next point in the hull
-                Point nextPoint = points[next[next[index]]];
-
-                // Determine the turn type using the HelperMethods.CheckTurn method
-                Enums.TurnType turn = HelperMethods.CheckTurn(segment, nextPoint);
-
-                // If the turn is not left, update the hull pointers and check for colinearity
-                if (turn != Enums.TurnType.Left)
+                if (polygon[i] == polygon[polygon.Count - 1])
                 {
-                    // Update the next pointer of the current point to skip the next point in the hull
-                    next[index] = next[next[index]];
-
-                    // Update the previous pointer of the next point to connect it to the current point
-                    prev[next[index]] = index;
-
-                    // If the points are colinear, break out of the loop
-                    if (turn == Enums.TurnType.Colinear)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    // If a left turn is encountered, break out of the loop
+                    polygon.RemoveAt(i);
                     break;
                 }
             }
         }
 
-
-        /// <summary>
-        /// Updates the lower hull line during incremental hull construction based on the new point.
-        /// </summary>
-        /// <param name="points">The list of points.</param>
-        /// <param name="index">The index of the new point.</param>
-        private void UpdateLowerLine(List<Point> points, int index)
+        public static double DistanacePointLine(Point P, Line L)
         {
-            // Continue updating the lower hull line until a right turn is encountered
-            while (true)
-            {
-                // Create a line segment using the current point and the previous point in the hull
-                Line segment = new Line(points[index], points[prev[index]]);
-
-                // Get the next point before the previous point in the hull
-                Point nextPoint = points[prev[prev[index]]];
-
-                // Determine the turn type using the HelperMethods.CheckTurn method
-                Enums.TurnType turn = HelperMethods.CheckTurn(segment, nextPoint);
-
-                // If the turn is not right, update the hull pointers and check for colinearity
-                if (turn != Enums.TurnType.Right)
-                {
-                    // Update the previous pointer of the current point to skip the previous point in the hull
-                    prev[index] = prev[prev[index]];
-
-                    // Update the next pointer of the previous point to connect it to the current point
-                    next[prev[index]] = index;
-
-                    // If the points are colinear, break out of the loop
-                    if (turn == Enums.TurnType.Colinear)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    // If a right turn is encountered, break out of the loop
-                    break;
-                }
-            }
+            Point l1 = L.Start;
+            Point l2 = L.End;
+            return Math.Abs((l2.X - l1.X) * (l1.Y - P.Y) - (l1.X - P.X) * (l2.Y - l1.Y)) / Math.Sqrt(Math.Pow(l2.X - l1.X, 2) + Math.Pow(l2.Y - l1.Y, 2));
         }
 
-
-        /// <summary>
-        /// Builds the final convex hull by traversing the hull edges and adding points to the result list.
-        /// </summary>
-        /// <param name="points">The list of points.</param>
-        /// <param name="outPoints">The list to store the convex hull points.</param>
-        /// <param name="index">The starting index for building the convex hull.</param>
-        private void BuildResultHull(List<Point> points, List<Point> outPoints, int index)
+        public static int orientation(Point p1, Point p2, Point p3)
         {
-            // Initialize the current index to the starting index
-            int currentIndex = 0;
-                
-            // Traverse the hull edges and add points to the result list
-            while (true)
-            {
-                // Add the current point to the result list
-                outPoints.Add(points[currentIndex]);
-
-                // Move to the next point in the hull using the next pointer
-                currentIndex = next[currentIndex];
-
-                // If the next point is the starting point, break out of the loop
-                if (currentIndex == 0)
-                {
-                    break;
-                }
-            }
+            double exp = (p2.Y - p1.Y) * (p3.X - p2.X) - (p2.X - p1.X) * (p3.Y - p2.Y);
+            if (exp == 0) return 0;  // collinear
+            return (exp > 0) ? 1 : 2; // clockwise or counterclockwise
         }
-
 
         public override string ToString()
         {

@@ -918,7 +918,7 @@ namespace CGUtilities.DataStructures
                     if (item == null)
                         itemClone = default(T);    // Really null, because we know T is a reference type
                     else
-                        itemClone = (T)(((ICloneable)item).Clone());
+                        itemClone = (T)((ICloneable)item).Clone();
                 }
 
                 clone.AddToBack(itemClone);

@@ -421,7 +421,7 @@ namespace CGUtilities.DataStructures
 			// We've added a node to the tree, so update the count.
 			count += 1;
 
-            return (duplicateFound == null);
+            return duplicateFound == null;
 		}
 
 		/// <summary>
@@ -449,7 +449,7 @@ namespace CGUtilities.DataStructures
 
 				// if links from gparent and parent are opposite (left/right or right/left),
 				// then rotate.
-				if ((gparent.left == parent) != (parent.left == node)) {
+				if (gparent.left == parent != (parent.left == node)) {
 					Rotate(gparent, parent, node);
 					parent = node;
 				}

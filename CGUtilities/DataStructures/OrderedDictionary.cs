@@ -229,7 +229,7 @@ namespace CGUtilities.DataStructures
                     if (pair.Key == null)
                         keyClone = default(TKey);  // Really null, because we know TKey isn't a value type.
                     else
-                        keyClone = (TKey)(((ICloneable)pair.Key).Clone());
+                        keyClone = (TKey)((ICloneable)pair.Key).Clone();
                 }
 
                 if (valueIsValueType)
@@ -238,7 +238,7 @@ namespace CGUtilities.DataStructures
                     if (pair.Value == null)
                         valueClone = default(TValue);   // Really null, because we know TKey isn't a value type.
                     else
-                        valueClone = (TValue)(((ICloneable)pair.Value).Clone());
+                        valueClone = (TValue)((ICloneable)pair.Value).Clone();
                 }
 
                 newDict.Add(keyClone, valueClone);

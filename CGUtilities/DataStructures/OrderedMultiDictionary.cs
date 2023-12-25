@@ -426,7 +426,7 @@ namespace CGUtilities.DataStructures
         public sealed override bool ContainsKey(TKey key)
         {
             KeyValuePair<TKey, TValue> dummy;
-            return (tree.FirstItemInRange(KeyRange(key), out dummy) >= 0);
+            return tree.FirstItemInRange(KeyRange(key), out dummy) >= 0;
         }
 
         /// <summary>
@@ -594,7 +594,7 @@ namespace CGUtilities.DataStructures
                     if (pair.Key == null)
                         keyClone = default(TKey);  // Really null, because we know TKey isn't a value type.
                     else
-                        keyClone = (TKey)(((ICloneable)pair.Key).Clone());
+                        keyClone = (TKey)((ICloneable)pair.Key).Clone();
                 }
 
                 if (valueIsValueType)
@@ -603,7 +603,7 @@ namespace CGUtilities.DataStructures
                     if (pair.Value == null)
                         valueClone = default(TValue);   // Really null, because we know TKey isn't a value type.
                     else
-                        valueClone = (TValue)(((ICloneable)pair.Value).Clone());
+                        valueClone = (TValue)((ICloneable)pair.Value).Clone();
                 }
 
                 newDict.Add(keyClone, valueClone);

@@ -41,10 +41,36 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constants.cs" />
+    <Compile Include="DataStructures\Algorithms.cs" />
+    <Compile Include="DataStructures\Bag.cs" />
+    <Compile Include="DataStructures\BigList.cs" />
+    <Compile Include="DataStructures\CollectionBase.cs" />
+    <Compile Include="DataStructures\Comparers.cs" />
+    <Compile Include="DataStructures\Deque.cs" />
+    <Compile Include="DataStructures\DictionaryBase.cs" />
+    <Compile Include="DataStructures\Hash.cs" />
+    <Compile Include="DataStructures\ListBase.cs" />
+    <Compile Include="DataStructures\MultiDictionary.cs" />
+    <Compile Include="DataStructures\MultiDictionaryBase.cs" />
+    <Compile Include="DataStructures\OrderedBag.cs" />
+    <Compile Include="DataStructures\OrderedDictionary.cs" />
+    <Compile Include="DataStructures\OrderedMultiDictionary.cs" />
+    <Compile Include="DataStructures\OrderedSet.cs" />
+    <Compile Include="DataStructures\Pair.cs" />
+    <Compile Include="DataStructures\ReadOnlyCollectionBase.cs" />
+    <Compile Include="DataStructures\ReadOnlyDictionaryBase.cs" />
+    <Compile Include="DataStructures\ReadOnlyListBase.cs" />
+    <Compile Include="DataStructures\ReadOnlyMultiDictionaryBase.cs" />
+    <Compile Include="DataStructures\RedBlack.cs" />
+    <Compile Include="DataStructures\Set.cs" />
+    <Compile Include="DataStructures\Strings.cs" />
+    <Compile Include="DataStructures\Triple.cs" />
+    <Compile Include="DataStructures\Util.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="FileHelper.cs" />
     <Compile Include="HelperMethods.cs" />
     <Compile Include="Line.cs" />
+    <Compile Include="obj\Debug\.NETFramework,Version=v4.8.AssemblyAttributes.cs" />
     <Compile Include="Point.cs" />
     <Compile Include="Polygon.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -53,7 +79,19 @@
     <Compile Include="StructureTranslator\PointCollectionTranslator.cs" />
     <Compile Include="StructureTranslator\PolygonCollectionTranslator.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="obj\Debug\CGUtilities.csproj.AssemblyReference.cache" />
+    <None Include="obj\Debug\CGUtilities.csproj.CoreCompileInputs.cache" />
+    <None Include="obj\Debug\DesignTimeResolveAssemblyReferencesInput.cache" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="obj\Debug\CGUtilities.csproj.FileListAbsolute.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bin\Debug\" />
+    <Folder Include="bin\Release\" />
+    <Folder Include="obj\Debug\TempPE\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

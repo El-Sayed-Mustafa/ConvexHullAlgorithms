@@ -194,7 +194,7 @@ namespace CGUtilities.DataStructures
                 T newKey;
 
                 if (!itemIsValueType && pair.Key != null)
-                    newKey = (T)(((ICloneable)pair.Key).Clone());
+                    newKey = (T)((ICloneable)pair.Key).Clone();
                 else
                     newKey = pair.Key;
 

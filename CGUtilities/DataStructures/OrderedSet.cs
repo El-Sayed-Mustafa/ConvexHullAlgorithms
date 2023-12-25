@@ -197,7 +197,7 @@ namespace CGUtilities.DataStructures
                     if (item == null)
                         itemClone = default(T);    // Really null, because we know T is a reference type
                     else
-                        itemClone = (T)(((ICloneable)item).Clone());
+                        itemClone = (T)((ICloneable)item).Clone();
                 }
 
                 clone.Add(itemClone);
@@ -704,7 +704,7 @@ namespace CGUtilities.DataStructures
 
                 // If both continue1 and continue2 are false, we reached the end of both sequences at the same
                 // time and found success. If one is true and one is false, the sequences were of difference lengths -- failure.
-                return (continue1 == continue2);
+                return continue1 == continue2;
             }
         }
 

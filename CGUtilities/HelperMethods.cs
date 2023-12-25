@@ -8,7 +8,16 @@ namespace CGUtilities
 {
     public class HelperMethods
     {
-        public static Enums.PointInPolygon PointInTriangle(Point p, Point a, Point b, Point c)
+        public static double LinePointDistance(Line line, Point point)
+        {
+            Point vector1 = line.Start.Vector(line.End);
+            Point vector2 = line.End.Vector(point);
+            double projDistance = Math.Abs(CrossProduct(vector2, vector1) / vector1.Magnitude());
+            double diagonal = line.End.Vector(point).Magnitude();
+            return Math.Sqrt(diagonal * diagonal - projDistance * projDistance);
+        }
+      
+        public static Enums.PointInPolygon PointInTriangle(Point p, Point a, Point b, Point c)  
         {
             if (a.Equals(b) && b.Equals(c))
             {
@@ -22,9 +31,9 @@ namespace CGUtilities
             Line bc = new Line(b, c);
             Line ca = new Line(c, a);
 
-            if (GetVector(ab).Equals(Point.Identity)) return (PointOnSegment(p, ca.Start, ca.End)) ? Enums.PointInPolygon.OnEdge : Enums.PointInPolygon.Outside;
-            if (GetVector(bc).Equals(Point.Identity)) return (PointOnSegment(p, ca.Start, ca.End)) ? Enums.PointInPolygon.OnEdge : Enums.PointInPolygon.Outside;
-            if (GetVector(ca).Equals(Point.Identity)) return (PointOnSegment(p, ab.Start, ab.End)) ? Enums.PointInPolygon.OnEdge : Enums.PointInPolygon.Outside;
+            if (GetVector(ab).Equals(Point.Identity)) return PointOnSegment(p, ca.Start, ca.End) ? Enums.PointInPolygon.OnEdge : Enums.PointInPolygon.Outside;
+            if (GetVector(bc).Equals(Point.Identity)) return PointOnSegment(p, ca.Start, ca.End) ? Enums.PointInPolygon.OnEdge : Enums.PointInPolygon.Outside;
+            if (GetVector(ca).Equals(Point.Identity)) return PointOnSegment(p, ab.Start, ab.End) ? Enums.PointInPolygon.OnEdge : Enums.PointInPolygon.Outside;
 
             if (CheckTurn(ab, p) == Enums.TurnType.Colinear)
                 return PointOnSegment(p, a, b)? Enums.PointInPolygon.OnEdge : Enums.PointInPolygon.Outside;
@@ -36,14 +45,6 @@ namespace CGUtilities
             if (CheckTurn(ab, p) == CheckTurn(bc, p) && CheckTurn(bc, p) == CheckTurn(ca, p))
                 return Enums.PointInPolygon.Inside;
             return Enums.PointInPolygon.Outside;
-        }
-        public static double LinePointDistance(Line line, Point point)
-        {
-            Point vector1 = line.Start.Vector(line.End);
-            Point vector2 = line.End.Vector(point);
-            double projDistance = Math.Abs(CrossProduct(vector2, vector1) / vector1.Magnitude());
-            double diagonal = line.End.Vector(point).Magnitude();
-            return Math.Sqrt(diagonal * diagonal - projDistance * projDistance);
         }
         public static Enums.TurnType CheckTurn(Point vector1, Point vector2)
         {
@@ -70,13 +71,13 @@ namespace CGUtilities
                 return p.Equals(a);
 
             if (b.X == a.X)
-                return p.X == a.X && (p.Y >= Math.Min(a.Y, b.Y) && p.Y <= Math.Max(a.Y, b.Y));
+                return p.X == a.X && p.Y >= Math.Min(a.Y, b.Y) && p.Y <= Math.Max(a.Y, b.Y);
             if (b.Y == a.Y)
-                return p.Y == a.Y && (p.X >= Math.Min(a.X, b.X) && p.X <= Math.Max(a.X, b.X));
+                return p.Y == a.Y && p.X >= Math.Min(a.X, b.X) && p.X <= Math.Max(a.X, b.X);
             double tx = (p.X - a.X) / (b.X - a.X);
             double ty = (p.Y - a.Y) / (b.Y - a.Y);
 
-            return (Math.Abs(tx - ty) <= Constants.Epsilon && tx <= 1 && tx >= 0);
+            return Math.Abs(tx - ty) <= Constants.Epsilon && tx <= 1 && tx >= 0;
         }
         /// <summary>
         /// Get turn type from cross product between two vectors (l.start -> l.end) and (l.end -> p)
@@ -90,32 +91,13 @@ namespace CGUtilities
             Point b = l.End.Vector(p);
             return HelperMethods.CheckTurn(a, b);
         }
+        public static Enums.TurnType CheckTurn(Point p1,Point p2,Point p3)
+        {
+            return CheckTurn(new Line(p1, p2), p3);
+        }
         public static Point GetVector(Line l)
         {
             return l.Start.Vector(l.End);
-        }
-        public static int orientation(Point p1, Point p2, Point p3)
-        {
-
-            double exp = (p2.Y - p1.Y) * (p3.X - p2.X) - (p2.X - p1.X) * (p3.Y - p2.Y);
-
-            if (exp == 0) return 0;  // collinear
-
-            return (exp > 0) ? 1 : 2; // clock or counterclock wise
-        }
-
-        public static Boolean CheckIntersection(Point a1, Point a2, Point b1, Point b2)
-        {
-            int o1 = orientation(a1, a2, b1);
-            int o2 = orientation(a1, a2, b2);
-            int o3 = orientation(b1, b2, a1);
-            int o4 = orientation(b1, b2, a2);
-
-            // general case
-            if (o1 != o2 && o3 != o4)
-                return true;
-            else
-                return false;
         }
     }
 }

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CGUtilities
 {
@@ -69,7 +65,7 @@ namespace CGUtilities
             Point ans = this / mag;
             return ans;
         }
-       
+
         /// <summary>
         /// Make a new instance of Point
         /// </summary>
@@ -77,6 +73,25 @@ namespace CGUtilities
         public object Clone()
         {
             return new Point(X, Y);
+        }
+
+    }
+
+    public class PointEvent
+    {
+        public int SegementId;
+        public Point Point;
+        public Enums.PointType PointType;
+        public PointEvent UpperEvent;
+        public PointEvent LowerEvent;
+
+        public PointEvent(int segementId, Point point, Enums.PointType pointType, PointEvent upperEvent, PointEvent lowerEvent)
+        {
+            SegementId = segementId;
+            Point = point;
+            PointType = pointType;
+            UpperEvent = upperEvent;
+            LowerEvent = lowerEvent;
         }
     }
 }

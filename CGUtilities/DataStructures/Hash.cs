@@ -172,11 +172,11 @@ namespace CGUtilities.DataStructures
             // The .NET framework tends to produce pretty bad hash codes.
             // Scramble them up to be much more random!
             hash += ~(hash << 15);
-            hash ^=  (hash >> 10);
-            hash +=  (hash << 3);
-            hash ^=  (hash >> 6);
+            hash ^=  hash >> 10;
+            hash +=  hash << 3;
+            hash ^=  hash >> 6;
             hash += ~(hash << 11);
-            hash ^=  (hash >> 16);  
+            hash ^=  hash >> 16;  
             hash &= 0x7FFFFFFF;
             if (hash == 0)
                 hash = 0x7FFFFFFF;     // Make sure it isn't zero.

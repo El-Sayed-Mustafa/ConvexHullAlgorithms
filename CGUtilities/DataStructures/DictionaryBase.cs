@@ -212,7 +212,7 @@ namespace CGUtilities.DataStructures
         public override bool Contains(KeyValuePair<TKey, TValue> item)
         {
             if (this.ContainsKey(item.Key)) {
-                return (object.Equals(this[item.Key], item.Value));
+                return object.Equals(this[item.Key], item.Value);
             }
             else {
                 return false;

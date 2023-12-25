@@ -667,7 +667,7 @@ namespace CGUtilities.DataStructures
                     if (item == null)
                         return default(T);    // Really null, because we know T is a reference type
                     else
-                        return (T)(((ICloneable)item).Clone());
+                        return (T)((ICloneable)item).Clone();
                 }));
             }
         }
@@ -969,7 +969,7 @@ namespace CGUtilities.DataStructures
                 if (node == null)
                     node = leaf;
                 else {
-                    if ((uint)(node.count) + (uint)(leaf.count) > MAXITEMS)
+                    if ((uint)node.count + (uint)leaf.count > MAXITEMS)
                         throw new InvalidOperationException(Strings.CollectionTooLarge);
 
                     node = node.AppendInPlace(leaf, true);
@@ -1021,7 +1021,7 @@ namespace CGUtilities.DataStructures
             if (copies == 1)
                 return node;
 
-            if ((long)copies * (long)(node.count) > MAXITEMS)
+            if ((long)copies * (long)node.count > MAXITEMS)
                 throw new InvalidOperationException(Strings.CollectionTooLarge);
 
             // Build up the copies by powers of two.
@@ -1054,7 +1054,7 @@ namespace CGUtilities.DataStructures
         private void CheckBalance()
         {
             if (root != null &&
-                (root.Depth > BALANCEFACTOR && !(root.Depth - BALANCEFACTOR <= MAXFIB && Count >= FIBONACCI[root.Depth - BALANCEFACTOR]))) 
+                root.Depth > BALANCEFACTOR && !(root.Depth - BALANCEFACTOR <= MAXFIB && Count >= FIBONACCI[root.Depth - BALANCEFACTOR])) 
             {
                 Rebalance();
             }
@@ -1290,7 +1290,7 @@ namespace CGUtilities.DataStructures
 
             count = Algorithms.BinarySearch<T>(this, item, comparer, out index);
             if (count == 0)
-                return (~index);
+                return ~index;
             else
                 return index;
         }
@@ -1622,7 +1622,7 @@ namespace CGUtilities.DataStructures
             /// <returns>True if the node is balanced by this definition.</returns>
             public bool IsBalanced()
             {
-                return (Depth <= MAXFIB && Count >= FIBONACCI[Depth]);
+                return Depth <= MAXFIB && Count >= FIBONACCI[Depth];
             }
 
             /// <summary>
@@ -1632,7 +1632,7 @@ namespace CGUtilities.DataStructures
             /// <returns>True if the node is almost balanced by this definition.</returns>
             public bool IsAlmostBalanced()
             {
-                return (Depth == 0 || (Depth - 1 <= MAXFIB && Count >= FIBONACCI[Depth - 1]));
+                return Depth == 0 || (Depth - 1 <= MAXFIB && Count >= FIBONACCI[Depth - 1]);
             }
         }
 
@@ -1734,7 +1734,7 @@ namespace CGUtilities.DataStructures
             private bool MergeLeafInPlace(Node other)
             {
                 Debug.Assert(!shared);
-                LeafNode otherLeaf = (other as LeafNode);
+                LeafNode otherLeaf = other as LeafNode;
                 int newCount;
                 if (otherLeaf != null && (newCount = otherLeaf.Count + this.count) <= MAXLEAF) {
                     // Combine the two leaf nodes into one.
@@ -1761,7 +1761,7 @@ namespace CGUtilities.DataStructures
             /// returns null.</returns>
             private Node MergeLeaf(Node other)
             {
-                LeafNode otherLeaf = (other as LeafNode);
+                LeafNode otherLeaf = other as LeafNode;
                 int newCount;
                 if (otherLeaf != null && (newCount = otherLeaf.Count + this.count) <= MAXLEAF) {
                     // Combine the two leaf nodes into one.
@@ -1859,7 +1859,7 @@ namespace CGUtilities.DataStructures
                 }
 
                 // If we're appending a tree with a left leaf node, try to merge them if possible.
-                ConcatNode otherConcat = (node as ConcatNode);
+                ConcatNode otherConcat = node as ConcatNode;
                 if (otherConcat != null && MergeLeafInPlace(otherConcat.left)) {
                     if (! nodeIsUnused)
                         otherConcat.right.MarkShared();
@@ -1881,7 +1881,7 @@ namespace CGUtilities.DataStructures
                     return result;
 
                 // If we're appending a concat with a left leaf, try to merge them if possible.
-                ConcatNode otherConcat = (node as ConcatNode);
+                ConcatNode otherConcat = node as ConcatNode;
                 if (otherConcat != null && (result = MergeLeaf(otherConcat.left)) != null) {
                     if (! nodeIsUnused)
                         otherConcat.right.MarkShared();
@@ -1972,7 +1972,7 @@ namespace CGUtilities.DataStructures
                 if (shared)
                     return Insert(index, node, nodeIsUnused);       // Can't update a shared node in place.
 
-                LeafNode otherLeaf = (node as LeafNode);
+                LeafNode otherLeaf = node as LeafNode;
                 int newCount;
 
                 if (otherLeaf != null && (newCount = otherLeaf.Count + this.count) <= MAXLEAF) {
@@ -2030,7 +2030,7 @@ namespace CGUtilities.DataStructures
             /// <returns>A new node with the give node inserted.</returns>
             public override Node Insert(int index, Node node, bool nodeIsUnused)
             {
-                LeafNode otherLeaf = (node as LeafNode);
+                LeafNode otherLeaf = node as LeafNode;
                 int newCount;
 
                 if (otherLeaf != null && (newCount = otherLeaf.Count + this.count) <= MAXLEAF) {

@@ -571,7 +571,7 @@ namespace CGUtilities.DataStructures
                     if (item.Key == null)
                         keyClone = default(TKey);  // Really null, because we know TKey isn't a value type.
                     else
-                        keyClone = (TKey)(((ICloneable)item.Key).Clone());
+                        keyClone = (TKey)((ICloneable)item.Key).Clone();
                 }
 
                 valuesClone = new TValue[item.Count];
@@ -582,7 +582,7 @@ namespace CGUtilities.DataStructures
                         if (item.Values[i] == null)
                             valuesClone[i] = default(TValue);   // Really null, because we know TKey isn't a value type.
                         else
-                            valuesClone[i] = (TValue)(((ICloneable)item.Values[i]).Clone());
+                            valuesClone[i] = (TValue)((ICloneable)item.Values[i]).Clone();
                     }
                 }
 

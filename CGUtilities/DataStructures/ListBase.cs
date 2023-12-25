@@ -110,7 +110,7 @@ namespace CGUtilities.DataStructures
         /// <returns>True if the list contains an item that compares equal to <paramref name="item"/>.</returns>
         public override bool Contains(T item)
         {
-            return (IndexOf(item) >= 0);
+            return IndexOf(item) >= 0;
         }
 
         /// <summary>

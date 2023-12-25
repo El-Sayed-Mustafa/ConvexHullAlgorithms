@@ -15,10 +15,7 @@ namespace CGAlgorithms.Algorithms.ConvexHull
         /// <param name="v1">The first vector.</param>
         /// <param name="v2">The second vector.</param>
         /// <returns>The dot product of the two vectors.</returns>
-        public static double DotProduct(Point v1, Point v2)
-        {
-            return v1.X * v2.X + v1.Y * v2.Y;
-        }
+      
 
         public override void Run(List<Point> points, List<Line> lines, List<Polygon> polygons, ref List<Point> outPoints, ref List<Line> outLines, ref List<Polygon> outPolygons)
         {
@@ -101,7 +98,10 @@ namespace CGAlgorithms.Algorithms.ConvexHull
 
             return currentLine;
         }
-
+        public static double DotProduct(Point v1, Point v2)
+        {
+            return v1.X * v2.X + v1.Y * v2.Y;
+        }
 
         /// <summary>
         /// Calculates the angles between the reference line and other points.
